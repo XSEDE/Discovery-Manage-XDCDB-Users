@@ -240,7 +240,7 @@ class HandleLoad():
         DATA = {}
         for row in cursor.fetchall():
             rowdict = dict(zip(COLS, row))
-            DATA[str(rowdict['username'])+str(rowdict['resource_name'])] = rowdict
+            DATA[str(rowdict['person_id'])] = rowdict
         return(DATA)
 
     def Warehouse_Usermap(self, new_items):
@@ -249,53 +249,55 @@ class HandleLoad():
         now_utc = datetime.now(utc)
 
         for item in XSEDELocalUsermap.objects.all():
-            if str(item.resource_name) in self.cur:
-                if str(item.local_username) in self.cur[str(item.resource_name)]:
+            if str(item.resource_id) in self.cur:
+                if str(item.local_username) in self.cur[str(item.resource_id)]:
                     pass
                 else:
-                    self.cur[str(item.resource_name)][str(
+                    self.cur[str(item.resource_id)][str(
                         item.local_username)] = item
             else:
-                self.cur[str(item.resource_name)] = {
+                self.cur[str(item.resource_id)] = {
                     str(item.local_username): item}
+
         for new_id in new_items:
-            nitem = new_items[new_id]
-            if nitem['resource_name'] in self.cur:
-                if nitem['username'] in self.cur[nitem['resource_name']]:
+            item = new_items[new_id]
+            if item['resource_id'] in self.cur:
+                if item['local_username'] in self.cur[item['resource_id']]:
                     continue
+            else:
+                #this is an else meaning item not currently in database
 
-            try:
-                model = XSEDELocalUsermap(person_id=nitem['person_id'],
-                                          portal_login=str(
-                                              nitem['portal_login']),
-                                          resource_id=nitem['resource_id'],
-                                          resource_name=str(
-                                              nitem['resource_name']),
-                                          local_username=str(
-                                              nitem['username']),
-                                          ResourceID=str(
-                                              nitem['resource_name'])+".org",
+                try:
+                    model = XSEDELocalUsermap(person_id=item['person_id'],
+                                              portal_login=str(
+                                                  item['portal_login']),
+                                              resource_id=item['resource_id'],
+                                              resource_name=str(
+                                                  item['resource_name']),
+                                              local_username=str(
+                                                  item['username']),
+                                              ResourceID=str(
+                                                  item['resource_name'])+".org",
 
-                                          )
-                model.save()
-                person_id = nitem['person_id']
-                self.logger.debug(
-                    'Usermap save person_id={}'.format(person_id))
-                self.new[nitem['person_id']] = model
-                #self.stats['ResourceProvider.Update'] += 1
-            except (DataError, IntegrityError) as e:
-                msg = '{} saving ID={}: {}'.format(
-                    type(e).__name__, person_id, e.message)
-                self.logger.error(msg)
-                return(False, msg)
+                                              )
+                    model.save()
+                    person_id = item['person_id']
+                    self.logger.debug(
+                        'Usermap save person_id={}'.format(person_id))
+                    self.new[item['person_id']] = model
+                    #self.stats['ResourceProvider.Update'] += 1
+                except (DataError, IntegrityError) as e:
+                    msg = '{} saving ID={}: {}'.format(
+                        type(e).__name__, person_id, e.message)
+                    self.logger.error(msg)
+                    return(False, msg)
 
         for resource in self.cur:
             for local_user in self.cur[resource]:
-                compstring = str(self.cur[resource][local_user].local_username)+str(self.cur[resource][local_user].resource_name)
-                if compstring not in new_items:
+                if str(self.cur[resource][local_user].person_id) not in new_items:
                     try:
-                        self.cur[resource][local_user].delete()
-                        #self.stats['XSEDELocalUsermap.Delete'] += 1
+                        XSEDELocalUsermap.objects.get(pk=resource).delete()
+                        self.stats['XSEDELocalUsermap.Delete'] += 1
                         self.logger.info('Usermap delete person_id={}'.format(
                             self.cur[resource][local_user].person_id))
                     except (DataError, IntegrityError) as e:

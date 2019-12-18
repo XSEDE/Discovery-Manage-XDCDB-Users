@@ -35,7 +35,7 @@ source ${PIPENV_BASE}/bin/activate
 
 PYTHON_BIN=python3
 
-export PYTHONPATH=${APP_SOURCE}/lib:${WAREHOUSE_SOURCE}/django_xsede_warehouse
+export PYTHONPATH=${APP_SOURCE}/lib:${WAREHOUSE_SOURCE}/PROD/django_xsede_warehouse
 export DJANGO_CONF=${APP_BASE}/conf/django_xsede_warehouse.conf
 export DJANGO_SETTINGS_MODULE=xsede_warehouse.settings
 
