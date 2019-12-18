@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # Load XDCDB username information from a source (database) to a destination (warehouse)
 import pdb
